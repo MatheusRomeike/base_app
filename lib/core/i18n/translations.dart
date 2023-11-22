@@ -1,7 +1,5 @@
 abstract class Translations {
-  String get loginSuccess;
-  String get unauthorized;
-  String get appName;
-  String get resourceNotFound;
+  String get emptyResult;
+  String get titleError;
   String get loading;
 }

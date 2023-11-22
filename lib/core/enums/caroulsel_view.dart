@@ -1,0 +1,1 @@
+enum CarouselView { header, indicator }

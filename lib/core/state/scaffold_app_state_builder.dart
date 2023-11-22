@@ -8,7 +8,7 @@ import 'scaffold_app_state.dart';
 
 class ScaffoldAppStateBuilder<T> extends StatefulWidget {
   final ScaffoldAppState state;
-  final Function onSuccess;
+  final Function? onSuccess;
   final Function? onError;
 
   final Widget body;
@@ -16,8 +16,8 @@ class ScaffoldAppStateBuilder<T> extends StatefulWidget {
 
   const ScaffoldAppStateBuilder({
     Key? key,
+    this.onSuccess,
     required this.state,
-    required this.onSuccess,
     this.onError,
     required this.body,
     this.appBar,
@@ -67,13 +67,14 @@ class _ScaffoldAppStateBuilderState extends State<ScaffoldAppStateBuilder> {
   }
 
   Future<void> onSuccess() async {
-    if (mounted) {
+    if (mounted && state.onSuccessMessage != null) {
       closeSnackBar();
 
-      showSnackBar(message: state.onSuccessMessage, icon: const SuccessIcon());
-      await Future.delayed(const Duration(seconds: 1));
+      showSnackBar(
+          message: state.onSuccessMessage ?? '', icon: const SuccessIcon());
+      await Future.delayed(const Duration(seconds: 3));
 
-      widget.onSuccess();
+      widget.onSuccess!();
 
       closeSnackBar();
     }
@@ -83,7 +84,8 @@ class _ScaffoldAppStateBuilderState extends State<ScaffoldAppStateBuilder> {
     if (mounted) {
       closeSnackBar();
 
-      showSnackBar(message: state.error.toString(), icon: const ErrorIcon());
+      showSnackBar(
+          message: state.error!.message.toString(), icon: const ErrorIcon());
 
       await Future.delayed(const Duration(seconds: 3));
       closeSnackBar();
@@ -95,7 +97,7 @@ class _ScaffoldAppStateBuilderState extends State<ScaffoldAppStateBuilder> {
       SnackBar(
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(8),
-        duration: const Duration(minutes: 1),
+        duration: const Duration(seconds: 8),
         content: Row(
           children: [
             if (icon != null) ...[

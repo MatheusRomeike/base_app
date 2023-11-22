@@ -1,5 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'package:base_app/core/entities/failure.dart';
 import 'package:base_app/core/repositories/base_repository.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 class BaseRepositoryTest extends BaseRepository {}
 
@@ -10,34 +11,23 @@ void main() {
     sut = BaseRepositoryTest();
   });
 
-  test('return left when is success on the task', () async {
-    int? value;
-    Exception? error;
+  test('return right when is success on the task', () async {
+    final (Failure? failure, int? data) = await sut.doAsync<int>(() async => 1);
 
-    final result = await sut.doAsync<int>(() async => 1);
-
-    result.fold((l) => error = l, (r) => value = r);
-
-    expect(result.isRight(), true);
-    expect(value, 1);
-    expect(error, null);
+    expect(data, 1);
+    expect(failure, null);
   });
 
   test(
-    'return right when has erros on the task',
+    'return left when has erros on the task',
     () async {
-      int? value;
-      Exception? error;
+      final Exception exception = Exception('Error');
 
-      Exception exception = Exception();
+      final (Failure? failure, int? data) =
+          await sut.doAsync<int>(() async => throw exception);
 
-      final result = await sut.doAsync<int>(() async => throw exception);
-
-      result.fold((l) => error = l, (r) => value = r);
-
-      expect(result.isLeft(), true);
-      expect(value, null);
-      expect(error, exception);
+      expect(data, null);
+      expect(failure?.message, exception.toString());
     },
   );
 }

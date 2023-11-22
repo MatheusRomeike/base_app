@@ -2,16 +2,10 @@ import '../translations.dart';
 
 class PtBr implements Translations {
   @override
-  String get loginSuccess => 'Login efetuado com sucesso.';
+  String get emptyResult => 'Resultado vazio.';
 
   @override
-  String get unauthorized => 'Não autorizado. Faça login novamente.';
-
-  @override
-  String get appName => 'App de Exemplo';
-
-  @override
-  String get resourceNotFound => 'Recurso não encontrado.';
+  String get titleError => 'Error';
 
   @override
   String get loading => 'Carregando...';

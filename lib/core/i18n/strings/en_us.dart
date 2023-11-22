@@ -2,16 +2,10 @@ import '../translations.dart';
 
 class EnUs implements Translations {
   @override
-  String get loginSuccess => 'Login successful.';
+  String get emptyResult => 'Empty result.';
 
   @override
-  String get unauthorized => 'Unauthorized. Please login again.';
-
-  @override
-  String get appName => 'Sample App';
-
-  @override
-  String get resourceNotFound => 'Resource not found.';
+  String get titleError => 'Error.';
 
   @override
   String get loading => 'Loading...';

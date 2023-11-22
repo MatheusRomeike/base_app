@@ -1,80 +1,115 @@
-import 'package:dio/dio.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../entities/request.dart';
 import '../i18n/i18n.dart';
 import '../print/print.dart';
-import '../storage/storage.dart';
 import 'communication_inferface.dart';
 
 class CommunicationImpl implements CommunicationInterface {
-  final client = Dio();
-  final storage = Storage();
+  final FirebaseFirestore firebase;
 
-  CommunicationImpl({required baseUrl, required String tokenType}) {
-    client.options.baseUrl = baseUrl;
-    client.interceptors.add(_onRequest(tokenType: tokenType));
-    client.interceptors.add(_onUnauthorized());
-  }
-
-  InterceptorsWrapper _onRequest({required String tokenType}) {
-    return InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        String? token = await storage.readOne(key: 'token');
-        if (token != null) {
-          options.headers['Authorization'] = '$tokenType $token';
-        }
-        return handler.next(options);
-      },
-    );
-  }
-
-  InterceptorsWrapper _onUnauthorized() {
-    return InterceptorsWrapper(
-      onError: (err, handler) async {
-        String? token = await storage.readOne(key: 'token');
-        if (err.response?.statusCode == 401 && token != null) {
-          await storage.deleteOne(key: 'token');
-          //try login
-        } else {
-          throw Exception(I18n.strings.unauthorized);
-        }
-      },
-    );
-  }
+  CommunicationImpl({
+    required this.firebase,
+  });
 
   @override
-  Future get(AppRequest request) async {
-    var res = await client.get(request.path,
-        data: request.data, queryParameters: request.queryParameters);
+  Future<List<Map<String, dynamic>>> get(
+    AppRequest request,
+  ) async {
+    final collection = firebase.collection(request.collection);
 
-    if (res.data == null) {
-      throw Exception(I18n.strings.resourceNotFound);
+    final parameters = request.parameters;
+
+    QuerySnapshot<Map<String, dynamic>> value;
+
+    if (parameters != null) {
+      if (parameters.containsKey('id')) {
+        var result = await collection.doc(parameters.values.first).get();
+
+        Map<String, dynamic>? data = result.data();
+
+        if (data == null) {
+          throw Exception(I18n.strings.emptyResult);
+        }
+
+        data.addEntries(parameters.entries);
+
+        return [data];
+      }
+
+      value = await collection
+          .where(parameters.keys.first, isEqualTo: parameters.values.first)
+          .get();
+    } else {
+      value = await collection.get();
     }
 
-    return res.data;
+    return value.docs.map((e) {
+      final data = e.data();
+
+      data['id'] = e.id;
+
+      return data;
+    }).toList();
   }
 
   @override
-  Future post(AppRequest request) async {
-    var res = await client.post(request.path,
-        data: request.data, queryParameters: request.queryParameters);
+  Future<Map<String, dynamic>> post(AppRequest request) async {
+    Map<String, dynamic>? data = request.parameters;
 
-    debugPrint(res.data);
+    if (data == null) {
+      throw Exception();
+    }
 
-    return res.data;
+    final value = await firebase.collection(request.collection).add(data);
+
+    debugPrint(value);
+
+    return {'id': value.id};
   }
 
   @override
-  Future delete(AppRequest request) async {
-    var res = await client.delete(request.path,
-        data: request.data, queryParameters: request.queryParameters);
-    return res.data;
+  Future<Map<String, dynamic>> put(AppRequest request) async {
+    Map<String, dynamic>? data = request.parameters;
+
+    if (data == null) {
+      throw Exception();
+    }
+
+    if (!data.containsKey('id')) {
+      throw Exception();
+    }
+
+    final String id = data['id'];
+
+    final result = await firebase
+        .collection(request.collection)
+        .doc(id)
+        .update(data)
+        .then((value) => {'id': id});
+
+    return result;
   }
 
   @override
-  Future put(AppRequest request) async {
-    var res = await client.put(request.path,
-        data: request.data, queryParameters: request.queryParameters);
-    return res.data;
+  Future<bool> delete(AppRequest request) {
+    Map<String, dynamic>? data = request.parameters;
+
+    if (data == null) {
+      throw Exception();
+    }
+
+    if (!data.containsKey('id')) {
+      throw Exception();
+    }
+
+    final String id = data['id'];
+
+    return firebase
+        .collection(request.collection)
+        .doc(id)
+        .delete()
+        .then((_) => true)
+        .catchError((_) => throw (Exception()));
   }
 }
